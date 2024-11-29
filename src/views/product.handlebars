@@ -212,3 +212,110 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            {{#if product.thumbnails.[0]}}
+                <img src="{{product.thumbnails.[0]}}" class="img-fluid rounded" alt="{{product.title}}">
+            {{else}}
+                <div class="bg-light rounded p-5 text-center">
+                    <i class="fas fa-image fa-4x text-muted"></i>
+                </div>
+            {{/if}}
+        </div>
+        <div class="col-md-6">
+            <h1 class="mb-3">{{product.title}}</h1>
+            <p class="lead">{{product.description}}</p>
+            <p><strong>Categoría:</strong> {{product.category}}</p>
+            <p><strong>Precio:</strong> ${{product.price}}</p>
+            <p><strong>Stock disponible:</strong> {{product.stock}}</p>
+            
+            {{#if user}}
+                {{#unless (eq user.role "admin")}}
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Cantidad:</label>
+                        <input type="number" class="form-control" id="quantity" min="1" max="{{product.stock}}" value="1" style="max-width: 100px;">
+                    </div>
+                    <button class="btn btn-primary" onclick="addToCart('{{product._id}}', event)">
+                        Agregar al carrito
+                    </button>
+                {{/unless}}
+            {{/if}}
+            
+            <div class="mt-3">
+                <a href="/products" class="btn btn-outline-secondary">Volver a productos</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const cartId = '{{user.cart}}';
+    console.log('Cart ID:', cartId);
+
+    async function addToCart(productId, event) {
+        if (!cartId) {
+            alert('Error: No se encontró el carrito del usuario');
+            return;
+        }
+
+        const button = event.currentTarget;
+        if (button.disabled) return;
+
+        const quantityInput = document.getElementById('quantity');
+        const quantity = parseInt(quantityInput.value);
+
+        if (isNaN(quantity) || quantity < 1) {
+            alert('Por favor ingrese una cantidad válida');
+            return;
+        }
+
+        try {
+            button.disabled = true;
+            button.innerText = 'Agregando...';
+
+            console.log('Sending request to:', `/api/carts/${cartId}/product/${productId}`);
+            console.log('Quantity:', quantity);
+
+            const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ quantity })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al agregar al carrito');
+            }
+
+            const data = await response.json();
+            console.log('Response:', data);
+
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-success');
+            button.innerText = '¡Agregado!';
+            
+            setTimeout(() => {
+                button.disabled = false;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+                button.innerText = 'Agregar al carrito';
+            }, 2000);
+        } catch (error) {
+            console.error('Error:', error);
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-danger');
+            button.innerText = error.message || 'Error al agregar';
+            
+            setTimeout(() => {
+                button.disabled = false;
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-primary');
+                button.innerText = 'Agregar al carrito';
+            }, 2000);
+        }
+    }
+</script>

@@ -96,12 +96,7 @@
                                     </td>
                                     <td>{{formatPrice this.price}}</td>
                                     <td>
-                                        <input type="number" 
-                                               class="form-control quantity-input" 
-                                               value="{{this.quantity}}"
-                                               min="1"
-                                               max="{{this.stock}}"
-                                               data-product-id="{{this.id}}">
+                                        <span class="quantity-display">{{this.quantity}}</span>
                                     </td>
                                     <td>{{formatPrice (multiply this.price this.quantity)}}</td>
                                     <td>
@@ -142,34 +137,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const cartId = '{{cart._id}}';
-
-    // Actualizar cantidad
-    const quantityInputs = document.querySelectorAll('.quantity-input');
-    quantityInputs.forEach(input => {
-        input.addEventListener('change', async function() {
-            const productId = this.dataset.productId;
-            const quantity = parseInt(this.value);
-            
-            try {
-                const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ quantity })
-                });
-                
-                if (response.ok) {
-                    location.reload();
-                } else {
-                    throw new Error('Error al actualizar cantidad');
-                }
-            } catch (error) {
-                alert('Error al actualizar la cantidad');
-                console.error('Error:', error);
-            }
-        });
-    });
 
     // Eliminar producto
     const removeButtons = document.querySelectorAll('.remove-product');
@@ -221,7 +188,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const checkoutButton = document.getElementById('checkout');
     if (checkoutButton) {
         checkoutButton.addEventListener('click', async function() {
-            alert('Funcionalidad de checkout en desarrollo');
+            try {
+                const response = await fetch(`/api/carts/${cartId}/purchase`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('¡Compra realizada con éxito!');
+                    location.reload();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Error al procesar la compra');
+                }
+            } catch (error) {
+                alert(error.message || 'Error al procesar la compra');
+                console.error('Error:', error);
+            }
         });
     }
 });

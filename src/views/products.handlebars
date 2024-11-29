@@ -42,11 +42,14 @@
                         <p class="card-text"><small class="text-muted">Categoría: {{category}}</small></p>
                         <p class="card-text"><strong>Precio: ${{price}}</strong></p>
                         <p class="card-text">Stock: {{stock}}</p>
-                        {{#if ../user}}
-                            {{#unless (eq ../user.role "admin")}}
-                                <button class="btn btn-primary" onclick="addToCart('{{_id}}')">Agregar al carrito</button>
-                            {{/unless}}
-                        {{/if}}
+                        <div class="d-grid gap-2">
+                            <a href="/products/{{_id}}" class="btn btn-info mb-2">Ver detalles</a>
+                            {{#if ../user}}
+                                {{#unless (eq ../user.role "admin")}}
+                                    <button class="btn btn-primary" onclick="addToCart('{{_id}}', event)" data-product-id="{{_id}}">Agregar al carrito</button>
+                                {{/unless}}
+                            {{/if}}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -88,6 +91,9 @@
 </div>
 
 <script>
+    const cartId = '{{user.cart}}';
+    console.log('Cart ID:', cartId); // Debug log
+
     function applyFilters() {
         const category = document.getElementById('categoryFilter').value;
         const sort = document.getElementById('sortFilter').value;
@@ -107,25 +113,59 @@
         window.location.href = currentUrl.toString();
     }
 
-    async function addToCart(productId) {
+    async function addToCart(productId, event) {
+        if (!cartId) {
+            alert('Error: No se encontró el carrito del usuario');
+            return;
+        }
+
+        const button = event.currentTarget;
+        if (button.disabled) return; // Prevent duplicate clicks
+
         try {
-            const cartId = '{{user.cart}}';
+            button.disabled = true;
+            button.innerText = 'Agregando...';
+
+            console.log('Sending request to:', `/api/carts/${cartId}/product/${productId}`);
+
             const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ quantity: 1 })
             });
 
-            if (response.ok) {
-                alert('Producto agregado al carrito');
-            } else {
-                const error = await response.json();
-                alert('Error al agregar al carrito: ' + error.message);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al agregar al carrito');
             }
+
+            const data = await response.json();
+            console.log('Response:', data);
+
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-success');
+            button.innerText = '¡Agregado!';
+            
+            setTimeout(() => {
+                button.disabled = false;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+                button.innerText = 'Agregar al carrito';
+            }, 2000);
         } catch (error) {
-            alert('Error al agregar al carrito');
             console.error('Error:', error);
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-danger');
+            button.innerText = error.message || 'Error al agregar';
+            
+            setTimeout(() => {
+                button.disabled = false;
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-primary');
+                button.innerText = 'Agregar al carrito';
+            }, 2000);
         }
     }
 </script>]]>

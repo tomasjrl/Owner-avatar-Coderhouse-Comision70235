@@ -26,7 +26,7 @@ router.post('/login', passport.authenticate('login', {
     try {
         req.session.login = true;
         req.session.user = req.user;
-        res.redirect('/products');
+        res.redirect('/');
     } catch (error) {
         console.error('Error en el login:', error);
         res.status(500).json({ error: 'Error en el login' });

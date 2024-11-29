@@ -57,7 +57,13 @@ process.env.MONGODB_URI = "mongodb+srv://usermongo:8wGHTRdShb2nNJU5@coder-cluste
 
 const DB_URL = process.env.MONGODB_URI;
 
-app.engine("handlebars", handlebars.engine({ helpers: newHelpers }));
+app.engine("handlebars", handlebars.engine({ 
+    helpers: newHelpers,
+    runtimeOptions: {
+        allowProtoPropertiesByDefault: true,
+        allowProtoMethodsByDefault: true
+    }
+}));
 app.set("view engine", "handlebars");
 app.set("views", __dirname + "/views");
 
@@ -121,7 +127,7 @@ connectToDatabase()
 
         app.use("/", viewsRouter);
         app.use("/api/products", productRouter);
-        app.use("/api/carts", cartRouter);
+        app.use("/api/carts", cartRouter(useMongoDBForCarts));
         app.use("/api/sessions", sessionsRouter);
 
         server.listen(PORT, () => {

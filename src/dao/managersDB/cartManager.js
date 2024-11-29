@@ -24,16 +24,22 @@ class CartManager {
             const cart = await Cart.findById(cartId);
             if (!cart) throw new Error('Carrito no encontrado');
 
-            const productIndex = cart.products.findIndex(p => p.product.toString() === productId);
+            // Buscar el producto en el carrito
+            const existingProduct = cart.products.find(p => p.product && p.product.toString() === productId);
 
-            if (productIndex >= 0) {
-                cart.products[productIndex].quantity += quantity;
+            if (existingProduct) {
+                // Si el producto ya existe, actualizar su cantidad
+                existingProduct.quantity += quantity;
             } else {
+                // Si el producto no existe, agregarlo al carrito
                 cart.products.push({ product: productId, quantity });
             }
 
+            // Guardar los cambios
             await cart.save();
-            return cart;
+            
+            // Retornar el carrito populado
+            return await Cart.findById(cartId).populate('products.product');
         } catch (error) {
             throw new Error('Error al agregar producto al carrito: ' + error.message);
         }

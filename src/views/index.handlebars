@@ -2,12 +2,20 @@
     <div class="jumbotron text-center my-4">
         <h1 class="display-4">Bienvenido a nuestro E-commerce</h1>
         <p class="lead">Descubre nuestra amplia selección de productos</p>
+        
         {{#if user}}
-            <p>¡Hola, {{user.first_name}}!</p>
-            <div class="mt-4">
-                <a href="/products" class="btn btn-primary btn-lg me-2">Ver Productos</a>
-                <a href="/carts/{{user.cart}}" class="btn btn-success btn-lg">Mi Carrito</a>
-            </div>
+            {{#if (eq user.role "admin")}}
+                <p>¡Hola, {{user.first_name}}!</p>
+                <div class="mt-4">
+                    <a href="/realtimeproducts" class="btn btn-primary btn-lg">Formulario</a>
+                </div>
+            {{else}}
+                <p>¡Hola, {{user.first_name}}!</p>
+                <div class="mt-4">
+                    <a href="/products" class="btn btn-primary btn-lg me-2">Ver Productos</a>
+                    <a href="/carts/{{user.cart}}" class="btn btn-success btn-lg">Mi Carrito</a>
+                </div>
+            {{/if}}
         {{else}}
             <div class="mt-4">
                 <a href="/login" class="btn btn-primary btn-lg me-2">Iniciar Sesión</a>
@@ -18,7 +26,7 @@
 
     {{#if user}}
         <div class="row mt-4">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Mi Perfil</h5>
@@ -27,24 +35,27 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Catálogo de Productos</h5>
-                        <p class="card-text">Explora nuestra colección de productos.</p>
-                        <a href="/products" class="btn btn-primary">Ver Productos</a>
+            {{#if (eq user.role "admin")}}
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Gestión de Productos</h5>
+                            <p class="card-text">Administra el catálogo de productos.</p>
+                            <a href="/realtimeproducts" class="btn btn-primary">Gestionar</a>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Mi Carrito</h5>
-                        <p class="card-text">Revisa los productos en tu carrito de compras.</p>
-                        <a href="/carts/{{user.cart}}" class="btn btn-primary">Ver Carrito</a>
+            {{else}}
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Mi Carrito</h5>
+                            <p class="card-text">Revisa los productos en tu carrito de compras.</p>
+                            <a href="/carts/{{user.cart}}" class="btn btn-primary">Ver Carrito</a>
+                        </div>
                     </div>
                 </div>
-            </div>
+            {{/if}}
         </div>
     {{else}}
         <div class="row mt-4">
@@ -53,7 +64,6 @@
                     <div class="card-body">
                         <h5 class="card-title">¿Ya tienes una cuenta?</h5>
                         <p class="card-text">Inicia sesión para acceder a tu perfil y carrito de compras.</p>
-                        <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
                     </div>
                 </div>
             </div>
@@ -62,7 +72,6 @@
                     <div class="card-body">
                         <h5 class="card-title">¿Eres nuevo aquí?</h5>
                         <p class="card-text">Regístrate para comenzar a comprar en nuestra tienda.</p>
-                        <a href="/register" class="btn btn-success">Registrarse</a>
                     </div>
                 </div>
             </div>

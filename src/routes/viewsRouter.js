@@ -1,6 +1,7 @@
 import express from 'express';
 import ProductManager from "../dao/managersDB/productManager.js";
 import CartManager from "../dao/managersDB/cartManager.js";
+import User from "../models/user.model.js";
 import { isAuthenticated, isNotAuthenticated, isAdmin } from "../middlewares/auth.js";
 
 const viewsRouter = express.Router();
@@ -27,6 +28,13 @@ viewsRouter.get('/register', isNotAuthenticated, (req, res) => {
 viewsRouter.get('/products', isAuthenticated, async (req, res) => {
     try {
         const { page = 1, limit = 10, sort, query, category } = req.query;
+        
+        // Ensure user has a cart
+        if (!req.session.user.cart) {
+            const newCart = await cartManager.createCart();
+            req.session.user.cart = newCart._id;
+            await User.findByIdAndUpdate(req.session.user._id, { cart: newCart._id });
+        }
         
         // Build filter object
         let filter = {};
@@ -86,25 +94,38 @@ viewsRouter.get('/products', isAuthenticated, async (req, res) => {
 
 viewsRouter.get('/products/:pid', isAuthenticated, async (req, res) => {
     try {
+        // Ensure user has a cart
+        if (!req.session.user.cart) {
+            const newCart = await cartManager.createCart();
+            req.session.user.cart = newCart._id;
+            await User.findByIdAndUpdate(req.session.user._id, { cart: newCart._id });
+        }
+
         const product = await productManager.getProductById(req.params.pid);
         if (product) {
-            res.render('product-details', { 
+            res.render('product', { 
                 product,
                 user: req.session.user,
                 title: product.title
             });
         } else {
-            res.status(404).send('Product not found');
+            res.status(404).render('error', {
+                error: 'Producto no encontrado',
+                user: req.session.user
+            });
         }
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).render('error', {
+            error: 'Error al cargar el producto',
+            user: req.session.user
+        });
     }
 });
 
 viewsRouter.get('/carts/:cid', isAuthenticated, async (req, res) => {
     try {
-        const cart = await cartManager.getCartById(req.params.cid);
+        const cart = await cartManager.getCart(req.params.cid);
         if (!cart) {
             return res.status(404).render('error', { 
                 error: 'Carrito no encontrado',
