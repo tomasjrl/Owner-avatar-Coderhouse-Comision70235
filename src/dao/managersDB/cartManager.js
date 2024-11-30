@@ -1,4 +1,5 @@
 import Cart from '../../models/cart.model.js';
+import mongoose from 'mongoose';
 
 class CartManager {
     async createCart() {
@@ -21,26 +22,49 @@ class CartManager {
 
     async addProductToCart(cartId, productId, quantity = 1) {
         try {
-            const cart = await Cart.findById(cartId);
-            if (!cart) throw new Error('Carrito no encontrado');
+            // Convertir IDs a ObjectId
+            const cartObjectId = new mongoose.Types.ObjectId(cartId);
+            const productObjectId = new mongoose.Types.ObjectId(productId);
 
-            // Buscar el producto en el carrito
-            const existingProduct = cart.products.find(p => p.product && p.product.toString() === productId);
+            // Primero, buscar si el producto ya existe en el carrito
+            const existingCart = await Cart.findOne({
+                _id: cartObjectId,
+                'products.product': productObjectId
+            });
 
-            if (existingProduct) {
-                // Si el producto ya existe, actualizar su cantidad
-                existingProduct.quantity += quantity;
+            if (existingCart) {
+                // Si el producto existe, actualizar su cantidad
+                const updatedCart = await Cart.findOneAndUpdate(
+                    {
+                        _id: cartObjectId,
+                        'products.product': productObjectId
+                    },
+                    {
+                        $inc: { 'products.$.quantity': quantity }
+                    },
+                    { new: true }
+                ).populate('products.product');
+
+                return updatedCart;
             } else {
                 // Si el producto no existe, agregarlo al carrito
-                cart.products.push({ product: productId, quantity });
-            }
+                const updatedCart = await Cart.findByIdAndUpdate(
+                    cartObjectId,
+                    {
+                        $push: {
+                            products: {
+                                product: productObjectId,
+                                quantity: quantity
+                            }
+                        }
+                    },
+                    { new: true }
+                ).populate('products.product');
 
-            // Guardar los cambios
-            await cart.save();
-            
-            // Retornar el carrito populado
-            return await Cart.findById(cartId).populate('products.product');
+                return updatedCart;
+            }
         } catch (error) {
+            console.error('Error en addProductToCart:', error);
             throw new Error('Error al agregar producto al carrito: ' + error.message);
         }
     }

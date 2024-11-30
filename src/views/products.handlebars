@@ -133,16 +133,18 @@
             return;
         }
 
-        const button = event.currentTarget;
-        if (button.disabled) return; // Prevent duplicate clicks
+        const button = event.currentTarget || event.target;
+        if (button.disabled) return;
 
         try {
             button.disabled = true;
+            const originalText = button.innerText;
             button.innerText = 'Agregando...';
 
-            console.log('Sending request to:', `/api/carts/${cartId}/product/${productId}`);
+            const url = `/api/carts/${cartId}/product/${productId}`;
+            console.log('Enviando solicitud a:', url);
 
-            const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -150,14 +152,24 @@
                 body: JSON.stringify({ quantity: 1 })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al agregar al carrito');
+            let data;
+            try {
+                const textResponse = await response.text();
+                try {
+                    data = JSON.parse(textResponse);
+                } catch (e) {
+                    console.error('Error parsing response:', textResponse);
+                    throw new Error('La respuesta del servidor no es un JSON válido');
+                }
+            } catch (e) {
+                throw new Error('Error al procesar la respuesta del servidor');
             }
 
-            const data = await response.json();
-            console.log('Response:', data);
+            if (!response.ok || data.status === 'error') {
+                throw new Error(data.message || 'Error al agregar al carrito');
+            }
 
+            // Éxito
             button.classList.remove('btn-primary');
             button.classList.add('btn-success');
             button.innerText = '¡Agregado!';
@@ -166,8 +178,9 @@
                 button.disabled = false;
                 button.classList.remove('btn-success');
                 button.classList.add('btn-primary');
-                button.innerText = 'Agregar al carrito';
+                button.innerText = originalText;
             }, 2000);
+
         } catch (error) {
             console.error('Error:', error);
             button.classList.remove('btn-primary');
