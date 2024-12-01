@@ -1,7 +1,7 @@
 import express from 'express';
 import ProductManager from '../dao/managersDB/productManager.js';
 import ProductFileManager from '../dao/managersFS/productManager.js';
-import { isAuthenticated, isAdmin } from '../middleware/auth.js';
+import { isAuthenticated, isAdmin } from '../middlewares/auth.js';
 
 const checkAdmin = (req, res, next) => {
     if (req.session?.user?.role === 'admin') {

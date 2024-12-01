@@ -31,7 +31,20 @@ export const isAdmin = (req, res, next) => {
             return next(err);
         }
         if (!user || user.role !== 'admin') {
-            return res.status(403).json({ error: 'Acceso denegado' });
+            return res.status(403).json({ message: 'Acceso denegado. Se requieren permisos de administrador.' });
+        }
+        req.user = user;
+        next();
+    })(req, res, next);
+};
+
+export const isUser = (req, res, next) => {
+    passport.authenticate('jwt', { session: false }, (err, user, info) => {
+        if (err) {
+            return next(err);
+        }
+        if (!user || user.role !== 'user') {
+            return res.status(403).json({ message: 'Acceso denegado. Se requieren permisos de usuario.' });
         }
         req.user = user;
         next();

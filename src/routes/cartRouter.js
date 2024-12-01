@@ -1,7 +1,7 @@
 import express from 'express';
 import CartManager from '../dao/managersDB/cartManager.js';
 import CartFileManager from '../dao/managersFS/cartManager.js';
-import { isAuthenticated, isUser } from '../middleware/auth.js';
+import { isAuthenticated, isUser } from '../middlewares/auth.js';
 
 const cartRouter = (useMongoDBForCarts = true) => {
     const router = express.Router();
@@ -12,7 +12,7 @@ const cartRouter = (useMongoDBForCarts = true) => {
     router.use(isAuthenticated);
 
     // Crear un nuevo carrito
-    router.post('/', async (req, res) => {
+    router.post('/', isUser, async (req, res) => {
         try {
             const newCart = await cartManager.createCart();
             res.status(201).json({ status: 'success', data: newCart });
@@ -22,7 +22,7 @@ const cartRouter = (useMongoDBForCarts = true) => {
     });
 
     // Obtener un carrito por ID
-    router.get('/:cid', async (req, res) => {
+    router.get('/:cid', isUser, async (req, res) => {
         try {
             const cart = await cartManager.getCart(req.params.cid);
             if (!cart) {
@@ -35,7 +35,7 @@ const cartRouter = (useMongoDBForCarts = true) => {
     });
 
     // Agregar un producto al carrito
-    router.post('/:cid/product/:pid', async (req, res) => {
+    router.post('/:cid/product/:pid', isUser, async (req, res) => {
         try {
             let quantity = 1;
             
@@ -83,7 +83,7 @@ const cartRouter = (useMongoDBForCarts = true) => {
     });
 
     // Eliminar un producto del carrito
-    router.delete('/:cid/product/:pid', async (req, res) => {
+    router.delete('/:cid/product/:pid', isUser, async (req, res) => {
         try {
             const updatedCart = await cartManager.removeProductFromCart(
                 req.params.cid,
@@ -96,7 +96,7 @@ const cartRouter = (useMongoDBForCarts = true) => {
     });
 
     // Actualizar el carrito completo
-    router.put('/:cid', async (req, res) => {
+    router.put('/:cid', isUser, async (req, res) => {
         try {
             const updatedCart = await cartManager.updateCart(
                 req.params.cid,
@@ -109,7 +109,7 @@ const cartRouter = (useMongoDBForCarts = true) => {
     });
 
     // Vaciar el carrito
-    router.delete('/:cid', async (req, res) => {
+    router.delete('/:cid', isUser, async (req, res) => {
         try {
             const emptyCart = await cartManager.clearCart(req.params.cid);
             res.json({ status: 'success', data: emptyCart });
