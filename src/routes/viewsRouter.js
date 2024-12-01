@@ -11,7 +11,7 @@ const cartManager = new CartManager();
 // Public routes
 viewsRouter.get('/', (req, res) => {
     res.render('index', { 
-        user: req.session.user,
+        user: req.user,
         title: 'Home'
     });
 });
@@ -30,10 +30,10 @@ viewsRouter.get('/products', isAuthenticated, async (req, res) => {
         const { page = 1, limit = 10, sort, query, category } = req.query;
         
         // Ensure user has a cart
-        if (!req.session.user.cart) {
+        if (!req.user.cart) {
             const newCart = await cartManager.createCart();
-            req.session.user.cart = newCart._id;
-            await User.findByIdAndUpdate(req.session.user._id, { cart: newCart._id });
+            req.user.cart = newCart._id;
+            await User.findByIdAndUpdate(req.user._id, { cart: newCart._id });
         }
         
         // Build filter object
@@ -80,14 +80,14 @@ viewsRouter.get('/products', isAuthenticated, async (req, res) => {
             currentCategory: category,
             currentSort: sort,
             currentQuery: query,
-            user: req.session.user,
+            user: req.user,
             title: 'Products'
         });
     } catch (error) {
         console.error('Error al obtener productos:', error);
         res.status(500).render('error', { 
             error: 'Error al cargar los productos',
-            user: req.session.user
+            title: 'Error'
         });
     }
 });
@@ -95,30 +95,30 @@ viewsRouter.get('/products', isAuthenticated, async (req, res) => {
 viewsRouter.get('/products/:pid', isAuthenticated, async (req, res) => {
     try {
         // Ensure user has a cart
-        if (!req.session.user.cart) {
+        if (!req.user.cart) {
             const newCart = await cartManager.createCart();
-            req.session.user.cart = newCart._id;
-            await User.findByIdAndUpdate(req.session.user._id, { cart: newCart._id });
+            req.user.cart = newCart._id;
+            await User.findByIdAndUpdate(req.user._id, { cart: newCart._id });
         }
 
         const product = await productManager.getProductById(req.params.pid);
         if (product) {
             res.render('product', { 
                 product,
-                user: req.session.user,
+                user: req.user,
                 title: product.title
             });
         } else {
             res.status(404).render('error', {
                 error: 'Producto no encontrado',
-                user: req.session.user
+                title: 'Error'
             });
         }
     } catch (error) {
         console.error('Error:', error);
         res.status(500).render('error', {
             error: 'Error al cargar el producto',
-            user: req.session.user
+            title: 'Error'
         });
     }
 });
@@ -129,7 +129,7 @@ viewsRouter.get('/carts/:cid', isAuthenticated, async (req, res) => {
         if (!cart) {
             return res.status(404).render('error', { 
                 error: 'Carrito no encontrado',
-                user: req.session.user
+                title: 'Error'
             });
         }
         const products = cart.products.map(item => ({
@@ -141,21 +141,21 @@ viewsRouter.get('/carts/:cid', isAuthenticated, async (req, res) => {
         res.render('cart-details', { 
             products,
             cart,
-            user: req.session.user,
+            user: req.user,
             title: 'Cart Details'
         });
     } catch (error) {
         console.error('Error al obtener carrito:', error);
         res.status(500).render('error', { 
             error: 'Error al cargar el carrito',
-            user: req.session.user
+            title: 'Error'
         });
     }
 });
 
 viewsRouter.get('/profile', isAuthenticated, (req, res) => {
     res.render('profile', { 
-        user: req.session.user,
+        user: req.user,
         title: 'Profile'
     });
 });
@@ -165,14 +165,14 @@ viewsRouter.get('/realtimeproducts', isAuthenticated, isAdmin, async (req, res) 
         const result = await productManager.getAllProducts({ limit: 100 });
         res.render('realTimeProducts', { 
             products: result.docs,
-            user: req.session.user,
+            user: req.user,
             title: 'Real Time Products'
         });
     } catch (error) {
         console.error('Error al obtener productos:', error);
         res.status(500).render('error', { 
             error: 'Error al cargar los productos',
-            user: req.session.user
+            title: 'Error'
         });
     }
 });

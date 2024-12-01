@@ -1,11 +1,40 @@
 import passport from 'passport';
 import local from 'passport-local';
+import jwt from 'passport-jwt';
 import User from '../models/user.model.js';
 import { createHash, isValidPassword } from '../utils/bcrypt.js';
 
 const LocalStrategy = local.Strategy;
+const JWTStrategy = jwt.Strategy;
+const ExtractJWT = jwt.ExtractJwt;
+
+const PRIVATE_KEY = 'CoderSecretJWT';
+
+const cookieExtractor = req => {
+    let token = null;
+    if (req && req.cookies) {
+        token = req.cookies['coderCookieToken'];
+    }
+    return token;
+};
 
 const initializePassport = () => {
+    // JWT Strategy
+    passport.use('jwt', new JWTStrategy({
+        jwtFromRequest: cookieExtractor,
+        secretOrKey: PRIVATE_KEY
+    }, async (jwt_payload, done) => {
+        try {
+            const user = await User.findById(jwt_payload.user._id);
+            if (!user) {
+                return done(null, false, { message: 'Usuario no encontrado' });
+            }
+            return done(null, user);
+        } catch (error) {
+            return done(error);
+        }
+    }));
+
     passport.use('register', new LocalStrategy(
         { passReqToCallback: true, usernameField: 'email' },
         async (req, username, password, done) => {

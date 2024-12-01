@@ -39,11 +39,11 @@ const cartRouter = (useMongoDBForCarts = true) => {
         try {
             let quantity = 1;
             
-            // Validar el ID del carrito
-            if (!req.params.cid) {
-                return res.status(400).json({
+            // Validar que el carrito pertenece al usuario
+            if (req.params.cid !== req.user.cart.toString()) {
+                return res.status(403).json({
                     status: 'error',
-                    message: 'ID de carrito no proporcionado'
+                    message: 'No tienes permiso para modificar este carrito'
                 });
             }
 
@@ -55,9 +55,9 @@ const cartRouter = (useMongoDBForCarts = true) => {
                 });
             }
 
-            // Validar y parsear la cantidad
-            if (req.body && typeof req.body.quantity !== 'undefined') {
-                quantity = parseInt(req.body.quantity, 10);
+            // Si se proporciona una cantidad en el body, usarla
+            if (req.body && req.body.quantity) {
+                quantity = parseInt(req.body.quantity);
                 if (isNaN(quantity) || quantity < 1) {
                     return res.status(400).json({
                         status: 'error',
@@ -66,42 +66,18 @@ const cartRouter = (useMongoDBForCarts = true) => {
                 }
             }
 
-            // Intentar agregar el producto al carrito
-            const updatedCart = await cartManager.addProductToCart(
-                req.params.cid,
-                req.params.pid,
-                quantity
-            );
-
-            // Encontrar el producto específico en el carrito actualizado
-            const addedProduct = updatedCart.products.find(
-                p => p.product._id.toString() === req.params.pid
-            );
-
-            // Preparar la respuesta
-            const response = {
-                status: 'success',
-                message: 'Producto actualizado en el carrito exitosamente',
-                data: {
-                    cartId: updatedCart._id,
-                    updatedProduct: addedProduct ? {
-                        productId: addedProduct.product._id,
-                        title: addedProduct.product.title,
-                        quantity: addedProduct.quantity,
-                        price: addedProduct.product.price
-                    } : null,
-                    totalProducts: updatedCart.products.length,
-                    totalQuantity: updatedCart.products.reduce((sum, p) => sum + p.quantity, 0)
-                }
-            };
-
-            return res.status(200).json(response);
-
+            const result = await cartManager.addProductToCart(req.params.cid, req.params.pid, quantity);
+            res.json({ 
+                status: 'success', 
+                message: 'Producto agregado al carrito exitosamente',
+                data: result 
+            });
         } catch (error) {
-            console.error('Error adding product to cart:', error);
-            return res.status(500).json({
-                status: 'error',
-                message: error.message || 'Error al agregar producto al carrito'
+            console.error('Error al agregar producto al carrito:', error);
+            res.status(500).json({ 
+                status: 'error', 
+                message: 'Error al agregar producto al carrito',
+                details: error.message 
             });
         }
     });

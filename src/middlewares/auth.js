@@ -1,23 +1,39 @@
+import passport from 'passport';
+
 export const isAuthenticated = (req, res, next) => {
-    if (req.session?.user) {
+    passport.authenticate('jwt', { session: false }, (err, user, info) => {
+        if (err) {
+            return next(err);
+        }
+        if (!user) {
+            return res.redirect('/login');
+        }
+        req.user = user;
         next();
-    } else {
-        res.redirect('/login');
-    }
+    })(req, res, next);
 };
 
 export const isNotAuthenticated = (req, res, next) => {
-    if (!req.session?.user) {
+    passport.authenticate('jwt', { session: false }, (err, user, info) => {
+        if (err) {
+            return next(err);
+        }
+        if (user) {
+            return res.redirect('/');
+        }
         next();
-    } else {
-        res.redirect('/');
-    }
+    })(req, res, next);
 };
 
 export const isAdmin = (req, res, next) => {
-    if (req.session?.user?.role === 'admin') {
+    passport.authenticate('jwt', { session: false }, (err, user, info) => {
+        if (err) {
+            return next(err);
+        }
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ error: 'Acceso denegado' });
+        }
+        req.user = user;
         next();
-    } else {
-        res.status(403).json({ status: 'error', message: 'Access denied. Admin only.' });
-    }
+    })(req, res, next);
 };
